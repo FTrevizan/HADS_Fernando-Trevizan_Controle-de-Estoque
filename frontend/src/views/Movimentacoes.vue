@@ -32,7 +32,6 @@ async function carregar() {
     }
 }
 
-// busca por texto feita na própria tela (produto, código ou pessoas)
 const lista = computed(() => {
     const termo = busca.value.trim().toLowerCase();
     if (!termo) return movimentacoes.value;

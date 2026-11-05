@@ -18,7 +18,6 @@ const produtoSelecionado = computed(() =>
     produtos.value.find((p) => p.id_produto === form.value.id_produto)
 );
 
-// EPI com validade passada não pode ser entregue
 const vencido = computed(() => {
     const v = produtoSelecionado.value?.validade;
     return !!v && v < new Date().toLocaleDateString('sv-SE');

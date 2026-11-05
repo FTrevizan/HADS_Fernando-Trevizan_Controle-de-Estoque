@@ -3,6 +3,7 @@ import Login from './views/Login.vue';
 import Home from './views/Home.vue';
 import Solicitar from './views/Solicitar.vue';
 import Solicitacoes from './views/Solicitacoes.vue';
+import EntregasEpi from './views/EntregasEpi.vue';
 import Funcionarios from './views/Funcionarios.vue';
 import FuncionarioForm from './views/FuncionarioForm.vue';
 import Grupos from './views/Grupos.vue';
@@ -22,6 +23,7 @@ const router = createRouter({
     { path: '/', name: 'home', component: Home, meta: { requerLogin: true } },
 
     { path: '/solicitacoes', name: 'solicitacoes', component: Solicitacoes, meta: gestao },
+    { path: '/epis', name: 'epis', component: EntregasEpi, meta: gestao },
 
     { path: '/funcionarios', name: 'funcionarios', component: Funcionarios, meta: gestao },
     { path: '/funcionarios/novo', name: 'funcionario-novo', component: FuncionarioForm, meta: gestao },

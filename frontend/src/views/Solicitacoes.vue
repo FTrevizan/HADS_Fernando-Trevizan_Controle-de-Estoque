@@ -10,7 +10,6 @@ const erro = ref('');
 const sucesso = ref('');
 const carregando = ref(false);
 
-// pedido que está sendo atendido e quem vai retirar
 const atendendo = ref(null);
 const retirada = ref('');
 const salvando = ref(false);
@@ -39,7 +38,6 @@ function nomeProduto(s) {
     return `${s.codigo} - ${s.produto}${s.tamanho ? ` (${s.tamanho})` : ''}`;
 }
 
-// por padrão, quem retira é quem pediu
 function abrirAtender(s) {
     sucesso.value = '';
     erro.value = '';
@@ -147,7 +145,6 @@ onMounted(async () => {
                             </td>
                         </tr>
 
-                        <!-- escolha de quem vai retirar -->
                         <tr v-if="atendendo === s.id_movimentacao" class="atender">
                             <td colspan="7">
                                 <label>Quem está retirando

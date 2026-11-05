@@ -45,8 +45,8 @@ async function entrar() {
       <label>
         <span class="rotulo">Senha</span>
         <div class="campo-senha">
-          <input v-model="senha" :type="verSenha ? 'text' : 'password'" placeholder="Digite sua senha"
-            autocomplete="current-password" />
+          <input v-model="senha" type="text" :class="{ oculta: !verSenha }" placeholder="Digite sua senha"
+            autocomplete="off" />
           <button type="button" class="olho" @click="verSenha = !verSenha">
             {{ verSenha ? 'Ocultar' : 'Mostrar' }}
           </button>
@@ -58,7 +58,6 @@ async function entrar() {
       <button class="entrar" :disabled="carregando || !login || !senha">
         {{ carregando ? 'Entrando...' : 'Entrar' }}
       </button>
-      <router-link to="/solicitar" class="link-solicitar">Fazer uma solicitação sem login</router-link>
     </form>
   </div>
 </template>
@@ -148,6 +147,10 @@ label {
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
 }
 
+.oculta {
+  -webkit-text-security: disc;
+}
+
 .campo-senha {
   position: relative;
 }
@@ -205,7 +208,4 @@ label {
   opacity: 0.45;
   cursor: not-allowed;
 }
-
-.link-solicitar { text-align: center; color: #6b7280; font-size: 0.9rem; text-decoration: none; }
-.link-solicitar:hover { color: #111827; text-decoration: underline; }
 </style>

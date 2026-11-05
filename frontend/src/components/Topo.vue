@@ -20,9 +20,11 @@ function sair() {
             <router-link to="/">Início</router-link>
             <router-link v-if="podeGerenciar" to="/solicitacoes">Solicitações</router-link>
             <router-link v-if="podeGerenciar" to="/movimentacoes">Movimentações</router-link>
+            <router-link v-if="podeGerenciar" to="/epis">Entregas de EPI</router-link>
             <router-link v-if="podeGerenciar" to="/produtos">Produtos</router-link>
             <router-link v-if="podeGerenciar" to="/grupos">Grupos</router-link>
             <router-link v-if="podeGerenciar" to="/funcionarios">Funcionários</router-link>
+            <router-link v-if="podeGerenciar" to="/solicitar">Solicitar produto</router-link>
         </nav>
 
         <span class="quem">{{ usuario.nome }} · {{ usuario.perfil }}</span>

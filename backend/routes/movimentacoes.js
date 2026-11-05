@@ -8,7 +8,6 @@ router.use(autenticar);
 const gerenciar = exigirPerfil('ADMINISTRADOR', 'ALMOXARIFADO');
 const consultar = exigirPerfil('ADMINISTRADOR', 'ALMOXARIFADO', 'COMPRAS');
 
-// Erro de regra de negócio (devolvido ao usuário com o status indicado)
 class ErroNegocio extends Error {
     constructor(status, mensagem) {
         super(mensagem);
@@ -16,8 +15,7 @@ class ErroNegocio extends Error {
     }
 }
 
-// Busca o produto e trava a linha (FOR UPDATE): dois registros simultâneos
-// no mesmo produto esperam um pelo outro e não corrompem o estoque
+
 async function bloquearProduto(cliente, id) {
     const { rows } = await cliente.query(
         `SELECT id_produto, nome, ativo, estoque_atual,
@@ -32,7 +30,6 @@ async function bloquearProduto(cliente, id) {
     return rows[0];
 }
 
-// Executa tudo dentro de uma transação: se algo falhar, nada é gravado
 async function executar(res, acao) {
     const cliente = await pool.connect();
     try {
@@ -45,11 +42,9 @@ async function executar(res, acao) {
         if (erro instanceof ErroNegocio) {
             return res.status(erro.status).json({ erro: erro.message });
         }
-        // 23503 = funcionário inexistente (chave estrangeira)
         if (erro.code === '23503') {
             return res.status(400).json({ erro: 'Funcionário inválido.' });
         }
-        // 23514 = CHECK do banco (rede de segurança contra estoque negativo)
         if (erro.code === '23514') {
             return res.status(409).json({ erro: 'Operação inválida para o estoque atual.' });
         }

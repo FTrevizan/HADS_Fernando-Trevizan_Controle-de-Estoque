@@ -47,7 +47,6 @@ async function salvar() {
         setor: form.value.setor,
     };
 
-    // só o administrador envia dados de acesso
     if (ehAdmin && temAcesso.value) {
         corpo.login = form.value.login;
         corpo.perfil = form.value.perfil;

@@ -5,7 +5,7 @@ import Topo from '../components/Topo.vue';
 
 const funcionarios = ref([]);
 const busca = ref('');
-const filtro = ref('todos'); // todos | ativos | inativos
+const filtro = ref('todos'); 
 const erro = ref('');
 const carregando = ref(false);
 

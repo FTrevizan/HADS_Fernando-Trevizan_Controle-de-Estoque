@@ -36,7 +36,6 @@ function lerProduto(body) {
     return { p, erro };
 }
 
-// Trata os erros do banco com mensagens claras
 function erroBanco(erro, res, mensagemPadrao) {
     if (erro.code === '23505') return res.status(409).json({ erro: 'Já existe um produto com este código.' });
     if (erro.code === '23503') return res.status(400).json({ erro: 'Grupo inválido.' });
@@ -107,7 +106,6 @@ router.get('/:id', verEstoque, async (req, res) => {
     }
 });
 
-// CADASTRAR: o estoque_atual nasce em 0 e só muda por entrada e saída
 router.post('/', gerenciar, async (req, res) => {
     const { p, erro } = lerProduto(req.body);
     if (erro) return res.status(400).json({ erro });

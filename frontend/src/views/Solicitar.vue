@@ -18,7 +18,6 @@ const produtoSelecionado = computed(() =>
     produtos.value.find((p) => p.id_produto === form.value.id_produto)
 );
 
-// produtos agrupados por grupo, para a lista de seleção
 const grupos = computed(() => {
     const mapa = {};
     for (const p of produtos.value) (mapa[p.grupo] ||= []).push(p);
@@ -98,7 +97,6 @@ function trocar() {
         <div class="cartao">
             <h1>Solicitar produto</h1>
 
-            <!-- passo 1: identificação pela matrícula -->
             <form v-if="!identificado" class="form" @submit.prevent="identificar">
                 <p class="sub">Informe sua matrícula para continuar</p>
 
@@ -115,7 +113,6 @@ function trocar() {
                 <router-link to="/login" class="voltar">Acesso do almoxarifado</router-link>
             </form>
 
-            <!-- passo 2: pedido -->
             <template v-else>
                 <p class="sub">Olá, <strong>{{ funcionario }}</strong></p>
 

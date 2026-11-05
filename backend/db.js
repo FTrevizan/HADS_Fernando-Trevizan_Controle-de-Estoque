@@ -1,7 +1,6 @@
 import pg from 'pg';
 import 'dotenv/config';
 
-// DATE (tipo 1082) como texto "AAAA-MM-DD", evitando erro de fuso horário
 pg.types.setTypeParser(1082, (valor) => valor);
 
 export const pool = new pg.Pool({

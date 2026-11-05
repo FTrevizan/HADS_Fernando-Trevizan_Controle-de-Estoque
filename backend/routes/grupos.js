@@ -4,7 +4,6 @@ import { autenticar, exigirPerfil } from '../middleware/auth.js';
 
 const router = Router();
 
-// Exige login e perfil ADMINISTRADOR ou ALMOXARIFADO em todas as rotas
 router.use(autenticar, exigirPerfil('ADMINISTRADOR', 'ALMOXARIFADO'));
 
 router.get('/', async (req, res) => {

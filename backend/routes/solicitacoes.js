@@ -11,7 +11,6 @@ class ErroNegocio extends Error {
     }
 }
 
-// ---------- ROTAS PÚBLICAS (sem login) ----------
 
 router.get('/publico/produtos', async (req, res) => {
     try {
@@ -119,7 +118,6 @@ router.get('/publico/minhas', async (req, res) => {
     }
 });
 
-// ---------- ROTAS INTERNAS (login + perfil) ----------
 router.use(autenticar, exigirPerfil('ADMINISTRADOR', 'ALMOXARIFADO'));
 
 router.get('/', async (req, res) => {
@@ -157,7 +155,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Confirma o pedido e baixa o estoque na mesma transação
 async function transacao(res, acao) {
     const cliente = await pool.connect();
     try {
@@ -178,13 +175,11 @@ async function transacao(res, acao) {
     }
 }
 
-// id_func_retirada é opcional: por padrão retira quem pediu
 router.post('/:id/atender', async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) return res.status(400).json({ erro: 'Id inválido.' });
 
     await transacao(res, async (c) => {
-        // FOR UPDATE impede dois atendimentos simultâneos do mesmo pedido
         const sol = (await c.query(
             `SELECT id_produto, quantidade, status, id_func_solicitante
          FROM movimentacao
@@ -238,7 +233,6 @@ router.post('/:id/atender', async (req, res) => {
     });
 });
 
-// Cancelar não mexe no estoque
 router.post('/:id/cancelar', async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) return res.status(400).json({ erro: 'Id inválido.' });

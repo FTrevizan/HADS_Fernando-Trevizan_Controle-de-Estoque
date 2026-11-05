@@ -6,7 +6,6 @@ import { autenticar, exigirPerfil } from '../middleware/auth.js';
 const router = Router();
 const PERFIS = ['ADMINISTRADOR', 'ALMOXARIFADO', 'COMPRAS'];
 
-// todas as rotas daqui exigem login e perfil ADMINISTRADOR ou ALMOXARIFADO
 router.use(autenticar, exigirPerfil('ADMINISTRADOR', 'ALMOXARIFADO'));
 
 router.get('/', async (req, res) => {
@@ -40,7 +39,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST /api/funcionarios
 router.post('/', async (req, res) => {
     const { matricula, nome, setor, login, senha, perfil } = req.body || {};
 
@@ -92,7 +90,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// GET /api/funcionarios/:id  (consultar um funcionário)
 router.get('/:id', async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) return res.status(400).json({ erro: 'Id inválido.' });
@@ -174,8 +171,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// PATCH /api/funcionarios/:id/ativo   { ativo: true|false }
-// desativar / reativar (nunca apagamos, para manter o histórico)
+
 router.patch('/:id/ativo', async (req, res) => {
     const id = Number(req.params.id);
     const { ativo } = req.body || {};
