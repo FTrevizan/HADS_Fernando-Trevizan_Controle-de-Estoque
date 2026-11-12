@@ -10,6 +10,7 @@ import movimentacoesRoutes from './routes/movimentacoes.js';
 import solicitacoesRoutes from './routes/solicitacoes.js';
 import episRoutes from './routes/epis.js';
 import relatoriosRoutes from './routes/relatorios.js';
+import dashboardRoutes from './routes/dashboard.js';
 
 const app = express();
 app.use(cors());
@@ -23,6 +24,7 @@ app.use('/api/movimentacoes', movimentacoesRoutes);
 app.use('/api/solicitacoes', solicitacoesRoutes);
 app.use('/api/epis', episRoutes);
 app.use('/api/relatorios', relatoriosRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.get('/api/saude', (req, res) => {
   res.json({ ok: true, mensagem: 'API funcionando!' });

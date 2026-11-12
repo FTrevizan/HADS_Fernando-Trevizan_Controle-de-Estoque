@@ -5,33 +5,60 @@ import Topo from '../components/Topo.vue';
 
 const lista = ref([]);
 const funcionarios = ref([]);
+
 const status = ref('PENDENTE');
 const erro = ref('');
 const sucesso = ref('');
+
 const carregando = ref(false);
+const salvando = ref(false);
 
 const atendendo = ref(null);
 const retirada = ref('');
-const salvando = ref(false);
 
-const rotulos = { PENDENTE: 'Aguardando', CONCLUIDA: 'Entregue', CANCELADA: 'Cancelado' };
+const rotulos = {
+    PENDENTE: 'Aguardando',
+    CONCLUIDA: 'Entregue',
+    CANCELADA: 'Cancelado'
+};
 
 async function carregar() {
     erro.value = '';
     carregando.value = true;
     atendendo.value = null;
+
     try {
-        const { data } = await api.get('/solicitacoes', { params: { status: status.value } });
+        const { data } = await api.get('/solicitacoes', {
+            params: { status: status.value }
+        });
+
         lista.value = data;
     } catch (e) {
-        erro.value = e.response?.data?.erro || 'Não foi possível carregar as solicitações.';
+        erro.value = e.response?.data?.erro ||
+            'Não foi possível carregar as solicitações.';
+        lista.value = [];
     } finally {
         carregando.value = false;
     }
 }
 
+async function carregarFuncionarios() {
+    try {
+        const { data } = await api.get('/funcionarios', {
+            params: { ativo: 'true' }
+        });
+
+        funcionarios.value = data;
+    } catch (e) {
+        funcionarios.value = [];
+        erro.value = 'Não foi possível carregar os funcionários.';
+    }
+}
+
 function dataFormatada(data) {
-    return data ? new Date(data).toLocaleString('pt-BR') : '—';
+    return data
+        ? new Date(data).toLocaleString('pt-BR')
+        : '—';
 }
 
 function nomeProduto(s) {
@@ -39,51 +66,77 @@ function nomeProduto(s) {
 }
 
 function abrirAtender(s) {
-    sucesso.value = '';
     erro.value = '';
+    sucesso.value = '';
+
     atendendo.value = s.id_movimentacao;
     retirada.value = s.id_func_solicitante;
 }
 
 async function confirmarAtender(s) {
+    if (!retirada.value) {
+        erro.value = 'Selecione o funcionário que está retirando o produto.';
+        return;
+    }
+
     erro.value = '';
+    sucesso.value = '';
     salvando.value = true;
+
     try {
-        const { data } = await api.post(`/solicitacoes/${s.id_movimentacao}/atender`, {
-            id_func_retirada: retirada.value,
-        });
+        const { data } = await api.post(
+            `/solicitacoes/${s.id_movimentacao}/atender`,
+            {
+                id_func_retirada: retirada.value
+            }
+        );
+
         await carregar();
-        sucesso.value = `Entrega registrada. Estoque atual: ${data.estoque_atual}.`;
+
+        sucesso.value =
+            `Entrega registrada com sucesso! Estoque atual: ${data.estoque_atual}.`;
+
     } catch (e) {
-        erro.value = e.response?.data?.erro || 'Não foi possível atender a solicitação.';
+        erro.value = e.response?.data?.erro ||
+            'Não foi possível atender a solicitação.';
     } finally {
         salvando.value = false;
     }
 }
 
 async function cancelar(s) {
-    if (!confirm(`Cancelar o pedido de ${s.solicitante}?`)) return;
+    if (!confirm(`Cancelar o pedido de ${s.solicitante}?`)) {
+        return;
+    }
+
     erro.value = '';
     sucesso.value = '';
+
     try {
-        await api.post(`/solicitacoes/${s.id_movimentacao}/cancelar`);
+        await api.post(
+            `/solicitacoes/${s.id_movimentacao}/cancelar`
+        );
+
         await carregar();
-        sucesso.value = 'Solicitação cancelada.';
+
+        sucesso.value = 'Solicitação cancelada com sucesso.';
+
     } catch (e) {
-        erro.value = e.response?.data?.erro || 'Não foi possível cancelar a solicitação.';
+        erro.value = e.response?.data?.erro ||
+            'Não foi possível cancelar a solicitação.';
     }
 }
 
-watch(status, carregar);
+watch(status, () => {
+    sucesso.value = '';
+    carregar();
+});
 
 onMounted(async () => {
-    try {
-        const { data } = await api.get('/funcionarios', { params: { ativo: 'true' } });
-        funcionarios.value = data;
-    } catch {
-        funcionarios.value = [];
-    }
-    carregar();
+    await Promise.all([
+        carregarFuncionarios(),
+        carregar()
+    ]);
 });
 </script>
 
@@ -91,8 +144,10 @@ onMounted(async () => {
     <Topo />
 
     <main class="conteudo">
+
         <div class="titulo">
             <h2>Solicitações</h2>
+
             <select v-model="status">
                 <option value="PENDENTE">Aguardando atendimento</option>
                 <option value="CONCLUIDA">Entregues</option>
@@ -101,10 +156,16 @@ onMounted(async () => {
             </select>
         </div>
 
-        <p v-if="sucesso" class="sucesso">{{ sucesso }}</p>
-        <p v-if="erro" class="erro">{{ erro }}</p>
+        <p v-if="sucesso" class="sucesso">
+            {{ sucesso }}
+        </p>
+
+        <p v-if="erro" class="erro">
+            {{ erro }}
+        </p>
 
         <div class="tabela-area">
+
             <table>
                 <thead>
                     <tr>
@@ -114,64 +175,121 @@ onMounted(async () => {
                         <th>Qtd.</th>
                         <th>Estoque</th>
                         <th>Situação</th>
-                        <th></th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
 
                 <tbody>
                     <template v-for="s in lista" :key="s.id_movimentacao">
                         <tr>
-                            <td>{{ dataFormatada(s.data_pedido) }}</td>
+                            <td>
+                                {{ dataFormatada(s.data_pedido) }}
+                            </td>
+
                             <td>
                                 {{ s.solicitante }}
-                                <small v-if="s.setor_solicitante">{{ s.setor_solicitante }}</small>
-                            </td>
-                            <td>{{ nomeProduto(s) }}</td>
-                            <td>{{ s.quantidade }}</td>
-                            <td :class="{ falta: s.status === 'PENDENTE' && s.estoque_atual < s.quantidade }">
-                                {{ s.estoque_atual }} {{ s.unidade_medida }}
-                            </td>
-                            <td>
-                                <span :class="['selo', s.status.toLowerCase()]">{{ rotulos[s.status] }}</span>
-                                <small v-if="s.status === 'CONCLUIDA'">
-                                    Retirado por {{ s.retirou }}<br />Atendido por {{ s.atendido_por }}
+
+                                <small v-if="s.setor_solicitante">
+                                    {{ s.setor_solicitante }}
                                 </small>
                             </td>
+
+                            <td>
+                                {{ nomeProduto(s) }}
+                            </td>
+
+                            <td>
+                                {{ s.quantidade }}
+                            </td>
+
+                            <td :class="{
+                                falta: s.status === 'PENDENTE'
+                                    && s.estoque_atual < s.quantidade
+                            }">
+                                {{ s.estoque_atual }}
+                                {{ s.unidade_medida }}
+                            </td>
+
+                            <td>
+                                <span :class="['selo', s.status.toLowerCase()]">
+                                    {{ rotulos[s.status] }}
+                                </span>
+
+                                <small v-if="s.status === 'CONCLUIDA'">
+                                    Retirado por {{ s.retirou }}
+                                    <br>
+                                    Atendido por {{ s.atendido_por }}
+                                </small>
+                            </td>
+
                             <td class="acoes">
                                 <template v-if="s.status === 'PENDENTE'">
-                                    <button class="link" @click="abrirAtender(s)">Atender</button>
-                                    <button class="link perigo" @click="cancelar(s)">Cancelar</button>
+
+                                    <button class="link" :disabled="salvando" @click="abrirAtender(s)">
+                                        Atender
+                                    </button>
+
+                                    <button class="link perigo" :disabled="salvando" @click="cancelar(s)">
+                                        Cancelar
+                                    </button>
+
                                 </template>
                             </td>
                         </tr>
 
                         <tr v-if="atendendo === s.id_movimentacao" class="atender">
                             <td colspan="7">
-                                <label>Quem está retirando
-                                    <select v-model="retirada">
-                                        <option v-for="f in funcionarios" :key="f.id_funcionario"
-                                            :value="f.id_funcionario">
-                                            {{ f.nome }} ({{ f.matricula }})
-                                        </option>
-                                    </select>
-                                </label>
-                                <button class="botao" :disabled="salvando" @click="confirmarAtender(s)">
-                                    {{ salvando ? 'Salvando...' : 'Confirmar entrega' }}
-                                </button>
-                                <button class="secundario" @click="atendendo = null">Fechar</button>
+
+                                <div class="linha-atendimento">
+
+                                    <label>
+                                        Quem está retirando?
+
+                                        <select v-model="retirada">
+                                            <option v-for="f in funcionarios" :key="f.id_funcionario"
+                                                :value="f.id_funcionario">
+                                                {{ f.nome }} ({{ f.matricula }})
+                                            </option>
+                                        </select>
+                                    </label>
+
+                                    <button class="botao" :disabled="salvando || !funcionarios.length"
+                                        @click="confirmarAtender(s)">
+                                        {{
+                                            salvando
+                                                ? 'Salvando...'
+                                                : 'Confirmar entrega'
+                                        }}
+                                    </button>
+
+                                    <button class="secundario" :disabled="salvando" @click="atendendo = null">
+                                        Fechar
+                                    </button>
+
+                                </div>
+
                             </td>
                         </tr>
+
                     </template>
 
                     <tr v-if="carregando">
-                        <td colspan="7" class="vazio">Carregando solicitações...</td>
+                        <td colspan="7" class="vazio">
+                            Carregando solicitações...
+                        </td>
                     </tr>
+
                     <tr v-else-if="lista.length === 0">
-                        <td colspan="7" class="vazio">Nenhuma solicitação encontrada.</td>
+                        <td colspan="7" class="vazio">
+                            Nenhuma solicitação encontrada.
+                        </td>
                     </tr>
+
                 </tbody>
             </table>
+
         </div>
+
     </main>
 </template>
 
@@ -306,18 +424,23 @@ button.link.perigo {
     color: #b91c1c;
 }
 
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
 tr.atender td {
     background: #f8fafc;
 }
 
-tr.atender td {
+.linha-atendimento {
     display: flex;
     align-items: flex-end;
     gap: 12px;
     flex-wrap: wrap;
 }
 
-tr.atender label {
+.linha-atendimento label {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -343,11 +466,6 @@ tr.atender label {
 .secundario {
     background: #e5e7eb;
     color: #1f2937;
-}
-
-.botao:disabled {
-    opacity: .5;
-    cursor: not-allowed;
 }
 
 .vazio {

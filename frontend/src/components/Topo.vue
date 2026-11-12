@@ -1,9 +1,17 @@
 <script setup>
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 const router = useRouter();
+const route = useRoute();
 const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
 const podeGerenciar = ['ADMINISTRADOR', 'ALMOXARIFADO'].includes(usuario.perfil);
+const podeRelatorio = ['ADMINISTRADOR', 'ALMOXARIFADO', 'COMPRAS'].includes(usuario.perfil);
+
+// volta para a tela anterior; se não houver, vai para o início
+function voltar() {
+    if (window.history.state?.back) router.back();
+    else router.push({ name: 'home' });
+}
 
 function sair() {
     localStorage.removeItem('token');
@@ -14,6 +22,8 @@ function sair() {
 
 <template>
     <header class="topo">
+        <button v-if="route.name !== 'home'" class="voltar" @click="voltar">← Voltar</button>
+
         <strong class="marca">Controle de Estoque</strong>
 
         <nav>
@@ -24,6 +34,7 @@ function sair() {
             <router-link v-if="podeGerenciar" to="/produtos">Produtos</router-link>
             <router-link v-if="podeGerenciar" to="/grupos">Grupos</router-link>
             <router-link v-if="podeGerenciar" to="/funcionarios">Funcionários</router-link>
+            <router-link v-if="podeRelatorio" to="/relatorios">Relatórios</router-link>
             <router-link v-if="podeGerenciar" to="/solicitar">Solicitar produto</router-link>
         </nav>
 
@@ -95,5 +106,15 @@ button {
 button:hover {
     background: #f59e0b;
     color: #0b1220;
+}
+
+button.voltar {
+    border-color: #475569;
+    color: #e5e7eb;
+}
+
+button.voltar:hover {
+    background: #334155;
+    color: #fff;
 }
 </style>

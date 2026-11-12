@@ -10,7 +10,18 @@ class ErroNegocio extends Error {
         this.status = status;
     }
 }
-
+// Funcionários ativos, agrupados por setor na página pública
+router.get('/publico/funcionarios', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT matricula, nome, setor FROM funcionario WHERE ativo ORDER BY setor, nome`
+    );
+    res.json(rows);
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: 'Erro ao carregar os funcionários.' });
+  }
+});
 
 router.get('/publico/produtos', async (req, res) => {
     try {

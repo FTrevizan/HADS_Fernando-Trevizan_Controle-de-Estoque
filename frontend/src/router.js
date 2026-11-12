@@ -4,6 +4,7 @@ import Home from './views/Home.vue';
 import Solicitar from './views/Solicitar.vue';
 import Solicitacoes from './views/Solicitacoes.vue';
 import EntregasEpi from './views/EntregasEpi.vue';
+import Relatorios from './views/Relatorios.vue';
 import Funcionarios from './views/Funcionarios.vue';
 import FuncionarioForm from './views/FuncionarioForm.vue';
 import Grupos from './views/Grupos.vue';
@@ -14,6 +15,7 @@ import Movimentacoes from './views/Movimentacoes.vue';
 import MovimentacaoForm from './views/MovimentacaoForm.vue';
 
 const gestao = { requerLogin: true, perfis: ['ADMINISTRADOR', 'ALMOXARIFADO'] };
+const consulta = { requerLogin: true, perfis: ['ADMINISTRADOR', 'ALMOXARIFADO', 'COMPRAS'] };
 
 const router = createRouter({
   history: createWebHistory(),
@@ -24,6 +26,7 @@ const router = createRouter({
 
     { path: '/solicitacoes', name: 'solicitacoes', component: Solicitacoes, meta: gestao },
     { path: '/epis', name: 'epis', component: EntregasEpi, meta: gestao },
+    { path: '/relatorios', name: 'relatorios', component: Relatorios, meta: consulta },
 
     { path: '/funcionarios', name: 'funcionarios', component: Funcionarios, meta: gestao },
     { path: '/funcionarios/novo', name: 'funcionario-novo', component: FuncionarioForm, meta: gestao },

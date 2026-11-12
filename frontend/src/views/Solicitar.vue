@@ -1,366 +1,440 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../api.js';
 
-const matricula = ref('');
-const funcionario = ref('');
-const pedidos = ref([]);
+const router = useRouter();
+
+const funcionarios = ref([]);
 const produtos = ref([]);
-const identificado = ref(false);
-const form = ref({ id_produto: '', quantidade: 1 });
+
+const matricula = ref('');
+const idProduto = ref('');
+const quantidade = ref(1);
+
 const erro = ref('');
 const sucesso = ref('');
-const carregando = ref(false);
+const carregando = ref(true);
+const salvando = ref(false);
 
-const rotulos = { PENDENTE: 'Aguardando', CONCLUIDA: 'Entregue', CANCELADA: 'Cancelado' };
+const produtoSelecionado = computed(() => {
+    return produtos.value.find(
+        p => p.id_produto === Number(idProduto.value)
+    );
+});
 
-const produtoSelecionado = computed(() =>
-    produtos.value.find((p) => p.id_produto === form.value.id_produto)
-);
-
-const grupos = computed(() => {
+// funcionários agrupados por setor, para a lista de seleção
+const funcionariosPorSetor = computed(() => {
     const mapa = {};
-    for (const p of produtos.value) (mapa[p.grupo] ||= []).push(p);
+    for (const f of funcionarios.value) (mapa[f.setor || 'Sem setor'] ||= []).push(f);
     return Object.entries(mapa);
 });
 
-function nomeProduto(p) {
-    return `${p.codigo} - ${p.nome}${p.tamanho ? ` (${p.tamanho})` : ''}`;
+// volta para a tela anterior; se não houver, vai para o login
+function voltar() {
+    if (window.history.state?.back) router.back();
+    else router.push({ name: 'login' });
 }
 
-function dataFormatada(data) {
-    return data ? new Date(data).toLocaleString('pt-BR') : '—';
-}
-
-async function carregarPedidos() {
-    const { data } = await api.get('/solicitacoes/publico/minhas', {
-        params: { matricula: matricula.value.trim() },
-    });
-    funcionario.value = data.funcionario;
-    pedidos.value = data.pedidos;
+async function carregarFuncionarios() {
+    try {
+        const { data } = await api.get('/solicitacoes/publico/funcionarios');
+        funcionarios.value = data;
+    } catch (e) {
+        erro.value = e.response?.data?.erro ||
+            'Não foi possível carregar a lista de funcionários.';
+    }
 }
 
 async function carregarProdutos() {
-    const { data } = await api.get('/solicitacoes/publico/produtos');
-    produtos.value = data;
+    try {
+        const { data } = await api.get('/solicitacoes/publico/produtos');
+        produtos.value = data;
+    } catch (e) {
+        erro.value = e.response?.data?.erro ||
+            'Não foi possível carregar os produtos.';
+    }
 }
 
-async function identificar() {
-    erro.value = '';
-    sucesso.value = '';
+async function carregar() {
     carregando.value = true;
-    try {
-        await carregarPedidos();
-        await carregarProdutos();
-        identificado.value = true;
-    } catch (e) {
-        erro.value = e.response?.data?.erro || 'Não foi possível conectar ao servidor.';
-    } finally {
-        carregando.value = false;
-    }
+    erro.value = '';
+
+    await Promise.all([
+        carregarFuncionarios(),
+        carregarProdutos()
+    ]);
+
+    carregando.value = false;
 }
 
 async function solicitar() {
     erro.value = '';
     sucesso.value = '';
-    carregando.value = true;
+
+    if (!matricula.value) {
+        erro.value = 'Selecione seu nome.';
+        return;
+    }
+
+    if (!idProduto.value) {
+        erro.value = 'Selecione um produto.';
+        return;
+    }
+
+    if (!Number.isInteger(Number(quantidade.value)) ||
+        Number(quantidade.value) < 1) {
+        erro.value = 'Informe uma quantidade válida.';
+        return;
+    }
+
+    if (produtoSelecionado.value &&
+        Number(quantidade.value) > produtoSelecionado.value.estoque_atual) {
+        erro.value = 'Quantidade maior que o estoque disponível.';
+        return;
+    }
+
+    salvando.value = true;
+
     try {
-        await api.post('/solicitacoes/publico', {
-            matricula: matricula.value.trim(),
-            id_produto: form.value.id_produto,
-            quantidade: form.value.quantidade,
+        const { data } = await api.post('/solicitacoes/publico', {
+            matricula: matricula.value,
+            id_produto: Number(idProduto.value),
+            quantidade: Number(quantidade.value)
         });
-        sucesso.value = 'Pedido enviado! Aguarde o atendimento do almoxarifado.';
-        form.value = { id_produto: '', quantidade: 1 };
-        await carregarPedidos();
+
+        sucesso.value =
+            `Solicitação registrada com sucesso! Pedido de ${data.produto}, quantidade: ${data.quantidade}.`;
+
+        idProduto.value = '';
+        quantidade.value = 1;
+
         await carregarProdutos();
     } catch (e) {
-        erro.value = e.response?.data?.erro || 'Não foi possível enviar o pedido.';
+        erro.value = e.response?.data?.erro ||
+            'Não foi possível registrar a solicitação.';
     } finally {
-        carregando.value = false;
+        salvando.value = false;
     }
 }
 
-function trocar() {
-    identificado.value = false;
-    matricula.value = '';
-    funcionario.value = '';
-    pedidos.value = [];
-    form.value = { id_produto: '', quantidade: 1 };
-    erro.value = '';
-    sucesso.value = '';
-}
+onMounted(carregar);
 </script>
 
 <template>
-    <div class="pagina">
+    <main class="pagina">
+
         <div class="cartao">
-            <h1>Solicitar produto</h1>
 
-            <form v-if="!identificado" class="form" @submit.prevent="identificar">
-                <p class="sub">Informe sua matrícula para continuar</p>
-
-                <label>
-                    <span>Matrícula</span>
-                    <input v-model.trim="matricula" placeholder="Digite sua matrícula" autofocus />
-                </label>
-
-                <p v-if="erro" class="erro">{{ erro }}</p>
-
-                <button class="principal" :disabled="carregando || !matricula">
-                    {{ carregando ? 'Verificando...' : 'Continuar' }}
+            <div class="topo">
+                <button type="button" class="voltar" @click="voltar">
+                    ← Voltar
                 </button>
-                <router-link to="/login" class="voltar">Acesso do almoxarifado</router-link>
+            </div>
+
+            <div class="cabecalho">
+                <h2>Solicitar Produto</h2>
+                <p>
+                    Preencha os dados abaixo para solicitar
+                    um produto ao almoxarifado.
+                </p>
+            </div>
+
+            <p v-if="erro" class="erro">
+                {{ erro }}
+            </p>
+
+            <p v-if="sucesso" class="sucesso">
+                {{ sucesso }}
+            </p>
+
+            <div v-if="carregando" class="carregando">
+                Carregando informações...
+            </div>
+
+            <form v-else @submit.prevent="solicitar">
+
+                <div class="campo">
+                    <label for="funcionario">
+                        Funcionário
+                    </label>
+
+                    <select id="funcionario" v-model="matricula" required>
+                        <option value="">Selecione</option>
+
+                        <optgroup v-for="[setor, lista] in funcionariosPorSetor" :key="setor" :label="setor">
+                            <option v-for="f in lista" :key="f.matricula" :value="f.matricula">
+                                {{ f.nome }} ({{ f.matricula }})
+                            </option>
+                        </optgroup>
+                    </select>
+
+                    <small v-if="funcionarios.length === 0">
+                        Nenhum funcionário disponível.
+                    </small>
+                </div>
+
+                <div class="campo">
+                    <label for="produto">
+                        Produto
+                    </label>
+
+                    <select id="produto" v-model="idProduto" required>
+                        <option value="">Selecione um produto</option>
+
+                        <option v-for="p in produtos" :key="p.id_produto" :value="String(p.id_produto)">
+                            {{ p.codigo }} - {{ p.nome }}
+                            {{ p.tamanho ? `(${p.tamanho})` : '' }}
+                        </option>
+                    </select>
+
+                    <small v-if="produtos.length === 0">
+                        Nenhum produto disponível.
+                    </small>
+                </div>
+
+                <div v-if="produtoSelecionado" class="estoque">
+                    <span>Estoque disponível:</span>
+
+                    <strong>
+                        {{ produtoSelecionado.estoque_atual }}
+                        {{ produtoSelecionado.unidade_medida }}
+                    </strong>
+                </div>
+
+                <div class="campo">
+                    <label for="quantidade">
+                        Quantidade
+                    </label>
+
+                    <input id="quantidade" v-model.number="quantidade" type="number" min="1"
+                        :max="produtoSelecionado?.estoque_atual" required />
+                </div>
+
+                <button type="submit" class="botao" :disabled="salvando ||
+                    !funcionarios.length ||
+                    !produtos.length">
+                    {{ salvando ? 'Enviando...' : 'Enviar solicitação' }}
+                </button>
+
             </form>
 
-            <template v-else>
-                <p class="sub">Olá, <strong>{{ funcionario }}</strong></p>
-
-                <form class="form" @submit.prevent="solicitar">
-                    <label>
-                        <span>Produto</span>
-                        <select v-model="form.id_produto" required>
-                            <option value="" disabled>Selecione</option>
-                            <optgroup v-for="[nome, lista] in grupos" :key="nome" :label="nome">
-                                <option v-for="p in lista" :key="p.id_produto" :value="p.id_produto">
-                                    {{ nomeProduto(p) }}
-                                </option>
-                            </optgroup>
-                        </select>
-                    </label>
-
-                    <p v-if="produtoSelecionado" class="info">
-                        Disponível:
-                        <strong>{{ produtoSelecionado.estoque_atual }} {{ produtoSelecionado.unidade_medida }}</strong>
-                    </p>
-
-                    <label>
-                        <span>Quantidade</span>
-                        <input v-model.number="form.quantidade" type="number" min="1"
-                            :max="produtoSelecionado?.estoque_atual" required />
-                    </label>
-
-                    <p v-if="sucesso" class="sucesso">{{ sucesso }}</p>
-                    <p v-if="erro" class="erro">{{ erro }}</p>
-
-                    <button class="principal" :disabled="carregando || !form.id_produto">
-                        {{ carregando ? 'Enviando...' : 'Solicitar' }}
-                    </button>
-                    <button type="button" class="voltar" @click="trocar">Trocar matrícula</button>
-                </form>
-
-                <div v-if="pedidos.length" class="pedidos">
-                    <h2>Meus pedidos</h2>
-                    <ul>
-                        <li v-for="p in pedidos" :key="p.id_movimentacao">
-                            <div>
-                                <strong>{{ p.produto }}{{ p.tamanho ? ` (${p.tamanho})` : '' }}</strong>
-                                <small>{{ p.quantidade }} un. · {{ dataFormatada(p.data_pedido) }}</small>
-                            </div>
-                            <span :class="['selo', p.status.toLowerCase()]">{{ rotulos[p.status] }}</span>
-                        </li>
-                    </ul>
-                </div>
-            </template>
         </div>
-    </div>
+
+    </main>
 </template>
 
 <style scoped>
 .pagina {
     min-height: 100vh;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    background-color: #1f2937;
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.05) 2px, transparent 2px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 2px, transparent 2px);
-    background-size: 56px 56px;
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: #0f1b33;
 }
 
 .cartao {
     width: 100%;
-    max-width: 440px;
-    padding: 32px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    max-width: 550px;
+    padding: 30px;
+    background: #162238;
+    border: 2px solid #334155;
+    border-radius: 14px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
 }
 
-h1 {
-    margin: 0 0 4px;
-    text-align: center;
-    font-size: 1.5rem;
-    color: #111827;
-}
-
-.sub {
-    margin: 0 0 18px;
-    text-align: center;
-    color: #6b7280;
-}
-
-.form {
+.topo {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-label {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-label span {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: #111827;
-}
-
-input,
-select {
-    width: 100%;
-    padding: 12px 14px;
-    border: 2px solid #94a3b8;
-    border-radius: 8px;
-    font-size: 1rem;
-    background: #fff;
-    color: #111827;
-    font-family: inherit;
-}
-
-input:focus,
-select:focus {
-    outline: none;
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
-}
-
-.info {
-    margin: 0;
-    padding: 10px 12px;
-    background: #f1f5f9;
-    border-radius: 8px;
-    color: #475569;
-    font-size: 0.92rem;
-}
-
-.sucesso {
-    margin: 0;
-    padding: 10px 12px;
-    background: #dcfce7;
-    color: #166534;
-    border-radius: 8px;
-    font-size: 0.92rem;
-}
-
-.erro {
-    margin: 0;
-    padding: 10px 12px;
-    background: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fca5a5;
-    border-radius: 8px;
-    font-size: 0.92rem;
-}
-
-.principal {
-    padding: 13px;
-    border: 0;
-    border-radius: 8px;
-    background: #f59e0b;
-    color: #111827;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.principal:hover:not(:disabled) {
-    background: #d97706;
-}
-
-.principal:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
+    justify-content: flex-start;
+    margin-bottom: 25px;
 }
 
 .voltar {
-    background: none;
-    border: 0;
-    color: #6b7280;
+    padding: 9px 16px;
+    border: 2px solid #334155;
+    border-radius: 8px;
+    background: #1e293b;
+    color: #cbd5e1;
     font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    padding: 4px;
+    transition: 0.2s;
 }
 
 .voltar:hover {
-    color: #111827;
-    text-decoration: underline;
+    background: #334155;
+    color: #ffffff;
 }
 
-.pedidos {
-    margin-top: 24px;
-    border-top: 1px solid #e5e7eb;
-    padding-top: 16px;
+.cabecalho {
+    margin-bottom: 28px;
+    text-align: center;
 }
 
-.pedidos h2 {
+.cabecalho h2 {
     margin: 0 0 10px;
-    font-size: 1.05rem;
-    color: #111827;
+    color: #f1f5f9;
+    font-size: 1.6rem;
+    font-weight: 700;
 }
 
-.pedidos ul {
-    list-style: none;
+.cabecalho p {
     margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 8px;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    line-height: 1.5;
 }
 
-.pedidos li {
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.campo label {
+    color: #e2e8f0;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+select,
+input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #334155;
+    border-radius: 8px;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: 0.2s;
+}
+
+select:focus,
+input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+select {
+    cursor: pointer;
+}
+
+select option {
+    background: #1e293b;
+    color: #f1f5f9;
+}
+
+select optgroup {
+    background: #162238;
+    color: #f59e0b;
+    font-style: normal;
+}
+
+input:disabled,
+select:disabled {
+    background: #334155;
+    cursor: not-allowed;
+}
+
+small {
+    display: block;
+    margin-top: 2px;
+    color: #94a3b8;
+    font-size: 0.8rem;
+}
+
+.estoque {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    padding: 10px 12px;
-    background: #f8fafc;
+    margin: -5px 0 20px;
+    padding: 14px 15px;
+    border: 2px solid #334155;
     border-radius: 8px;
+    background: #1e293b;
+    color: #cbd5e1;
+    font-size: 0.9rem;
 }
 
-.pedidos li div {
-    display: flex;
-    flex-direction: column;
+.estoque strong {
+    color: #60a5fa;
+    font-weight: 700;
 }
 
-.pedidos small {
-    color: #6b7280;
+.erro {
+    margin: 0 0 18px;
+    padding: 12px 15px;
+    border: 1px solid #991b1b;
+    border-radius: 8px;
+    background: #450a0a;
+    color: #fecaca;
+    font-size: 0.9rem;
+    line-height: 1.5;
 }
 
-.selo {
-    padding: 3px 10px;
-    border-radius: 999px;
-    font-size: 0.78rem;
+.sucesso {
+    margin: 0 0 18px;
+    padding: 12px 15px;
+    border: 1px solid #166534;
+    border-radius: 8px;
+    background: #052e16;
+    color: #bbf7d0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.carregando {
+    padding: 30px 10px;
+    color: #94a3b8;
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.botao {
+    width: 100%;
+    padding: 13px 18px;
+    border: 2px solid #2563a8;
+    border-radius: 8px;
+    background: #2563a8;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.95rem;
     font-weight: 600;
-    white-space: nowrap;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-.selo.pendente {
-    background: #fef3c7;
-    color: #92400e;
+.botao:hover:not(:disabled) {
+    background: #1d4f85;
+    border-color: #1d4f85;
+    transform: translateY(-1px);
 }
 
-.selo.concluida {
-    background: #dcfce7;
-    color: #166534;
+.botao:active:not(:disabled) {
+    transform: translateY(0);
 }
 
-.selo.cancelada {
-    background: #fee2e2;
-    color: #991b1b;
+.botao:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .pagina {
+        padding: 20px 12px;
+    }
+
+    .cartao {
+        padding: 22px 16px;
+    }
+
+    .cabecalho h2 {
+        font-size: 1.4rem;
+    }
 }
 </style>
