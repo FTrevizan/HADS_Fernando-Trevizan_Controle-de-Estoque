@@ -8,11 +8,10 @@ const route = useRoute();
 
 const funcionarios = ref([]);
 const busca = ref('');
-const filtro = ref('todos'); // todos | ativos | inativos
+const filtro = ref('todos'); 
 const erro = ref('');
 const carregando = ref(false);
 
-// matrícula gerada no cadastro que acabou de ser feito
 const nova = ref(route.query.nova || '');
 
 async function carregar() {
@@ -46,7 +45,6 @@ async function alternarAtivo(func) {
     }
 }
 
-// espera o usuário parar de digitar antes de buscar
 let espera;
 watch(busca, () => {
     clearTimeout(espera);

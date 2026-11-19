@@ -10,7 +10,7 @@ const router = useRouter();
 const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
 const ehAdmin = usuario.perfil === 'ADMINISTRADOR';
 
-const id = route.params.id; // sem id = cadastro novo
+const id = route.params.id; 
 const editando = computed(() => !!id);
 
 const matriculas = ref({ controle: '', rh: '' });
@@ -20,7 +20,6 @@ const jaTinhaAcesso = ref(false);
 const erro = ref('');
 const salvando = ref(false);
 
-// se o funcionário tem um setor antigo que não está na lista, ele continua aparecendo
 const opcoesSetor = computed(() => {
     const atual = form.value.setor;
     return atual && !SETORES.includes(atual) ? [atual, ...SETORES] : SETORES;
@@ -49,10 +48,8 @@ async function salvar() {
     erro.value = '';
     salvando.value = true;
 
-    // as matrículas nunca são enviadas: o sistema gera e mantém as duas
     const corpo = { nome: form.value.nome, setor: form.value.setor };
 
-    // só o administrador envia dados de acesso
     if (ehAdmin && temAcesso.value) {
         corpo.login = form.value.login;
         corpo.perfil = form.value.perfil;
@@ -65,7 +62,6 @@ async function salvar() {
             router.push({ name: 'funcionarios' });
         } else {
             const { data } = await api.post('/funcionarios', corpo);
-            // a lista mostra a matrícula que o sistema gerou
             router.push({ name: 'funcionarios', query: { nova: data.matricula } });
         }
     } catch (e) {
@@ -83,7 +79,6 @@ async function salvar() {
         <h2>{{ editando ? 'Editar funcionário' : 'Novo funcionário' }}</h2>
 
         <form class="cartao" @submit.prevent="salvar">
-            <!-- edição: as duas matrículas só para consulta -->
             <div v-if="editando" class="linha">
                 <label>Matrícula de controle
                     <input :value="matriculas.controle" disabled />
@@ -93,7 +88,6 @@ async function salvar() {
                 </label>
             </div>
 
-            <!-- cadastro: nada a digitar -->
             <p v-else class="info">
                 As matrículas de <strong>controle interno</strong> e do <strong>RH</strong>
                 serão geradas automaticamente ao salvar.
