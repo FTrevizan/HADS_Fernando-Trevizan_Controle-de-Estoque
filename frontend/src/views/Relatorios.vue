@@ -5,7 +5,6 @@ import Topo from '../components/Topo.vue';
 
 const hoje = new Date().toLocaleDateString('sv-SE');
 
-// cada relatório: rota da API, filtros usados e colunas da tabela
 const relatorios = {
     estoque: {
         titulo: 'Estoque atual',
@@ -142,7 +141,6 @@ function formatar(valor, fmt) {
     return valor;
 }
 
-// monta só os parâmetros que o relatório escolhido usa
 function montarParams() {
     const f = filtros.value;
     const p = {};
@@ -165,7 +163,7 @@ async function carregar() {
     const rel = escolhido.value;
     try {
         const { data } = await api.get(`/relatorios/${rel}`, { params: montarParams() });
-        if (rel !== escolhido.value) return; // resposta de um relatório já trocado
+        if (rel !== escolhido.value) return; 
         if (rel === 'mensal') {
             resumo.value = data;
             linhas.value = [];
@@ -198,7 +196,6 @@ function exportar() {
     const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
     const texto = [cabecalho, ...dados].map((l) => l.map(esc).join(';')).join('\r\n');
 
-    // BOM para o Excel abrir os acentos corretamente
     const blob = new Blob(['\ufeff' + texto], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -231,7 +228,7 @@ onMounted(async () => {
         epis.value = [];
     }
     try {
-        // só administrador e almoxarifado podem listar funcionários
+        
         const { data } = await api.get('/funcionarios');
         funcionarios.value = data;
     } catch {

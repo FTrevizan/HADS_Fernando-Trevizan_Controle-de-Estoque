@@ -20,7 +20,6 @@ const hoje = new Date().toLocaleDateString('pt-BR', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
 });
 
-// cartões de resumo; cada um só aparece para quem pode abrir a tela
 const cartoes = computed(() => {
   if (!painel.value) return [];
   const r = painel.value.resumo;
@@ -112,7 +111,6 @@ onMounted(async () => {
       <p v-else-if="carregando" class="vazio">Carregando painel...</p>
 
       <template v-else-if="painel">
-        <!-- resumo -->
         <section class="cartoes">
           <router-link v-for="c in cartoes" :key="c.titulo" :to="c.para" :class="['cartao', c.tom]">
             <span class="rotulo">{{ c.titulo }}</span>
@@ -121,7 +119,6 @@ onMounted(async () => {
           </router-link>
         </section>
 
-        <!-- alertas -->
         <section class="duas-colunas">
           <div class="painel">
             <div class="painel-topo">
@@ -160,7 +157,6 @@ onMounted(async () => {
           </div>
         </section>
 
-        <!-- últimas movimentações (só para quem pode abrir a tela) -->
         <section v-if="ehGestao" class="painel">
           <div class="painel-topo">
             <h2>Últimas movimentações</h2>
@@ -197,7 +193,6 @@ onMounted(async () => {
           <p v-else class="tudo-certo">Ainda não há movimentações registradas.</p>
         </section>
 
-        <!-- atalhos -->
         <section>
           <h2 class="titulo-secao">Acesso rápido</h2>
           <div class="atalhos">

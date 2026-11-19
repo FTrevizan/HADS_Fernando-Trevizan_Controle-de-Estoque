@@ -53,7 +53,7 @@ async function salvar() {
         sucesso.value = `${ehSaida.value ? 'Saída' : 'Entrada'} registrada. Estoque atual: ${data.estoque_atual}.`;
         form.value.quantidade = 1;
         form.value.id_func_retirada = '';
-        await carregarProdutos(); // atualiza o estoque mostrado na lista
+        await carregarProdutos(); 
     } catch (e) {
         erro.value = e.response?.data?.erro || 'Não foi possível registrar a movimentação.';
     } finally {

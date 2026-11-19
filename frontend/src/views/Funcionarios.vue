@@ -1,13 +1,19 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import api from '../api.js';
 import Topo from '../components/Topo.vue';
 
+const route = useRoute();
+
 const funcionarios = ref([]);
 const busca = ref('');
-const filtro = ref('todos'); 
+const filtro = ref('todos'); // todos | ativos | inativos
 const erro = ref('');
 const carregando = ref(false);
+
+// matrícula gerada no cadastro que acabou de ser feito
+const nova = ref(route.query.nova || '');
 
 async function carregar() {
     erro.value = '';
@@ -40,6 +46,7 @@ async function alternarAtivo(func) {
     }
 }
 
+// espera o usuário parar de digitar antes de buscar
 let espera;
 watch(busca, () => {
     clearTimeout(espera);
@@ -59,6 +66,11 @@ onMounted(carregar);
             <router-link to="/funcionarios/novo" class="botao">+ Novo funcionário</router-link>
         </div>
 
+        <p v-if="nova" class="sucesso">
+            Funcionário cadastrado. Matrícula de controle interno gerada: <strong>{{ nova }}</strong>
+            <button class="fechar" @click="nova = ''">×</button>
+        </p>
+
         <div class="filtros">
             <input v-model="busca" placeholder="Buscar por nome ou matrícula" />
             <select v-model="filtro">
@@ -74,7 +86,8 @@ onMounted(carregar);
             <table>
                 <thead>
                     <tr>
-                        <th>Matrícula</th>
+                        <th>Matrícula de controle</th>
+                        <th>Matrícula do RH</th>
                         <th>Nome</th>
                         <th>Setor</th>
                         <th>Acesso</th>
@@ -85,6 +98,7 @@ onMounted(carregar);
                 <tbody>
                     <tr v-for="f in funcionarios" :key="f.id_funcionario">
                         <td>{{ f.matricula }}</td>
+                        <td>{{ f.matricula_rh || '—' }}</td>
                         <td>{{ f.nome }}</td>
                         <td>{{ f.setor }}</td>
                         <td>{{ f.perfil ? `${f.perfil} (${f.login})` : '—' }}</td>
@@ -101,7 +115,7 @@ onMounted(carregar);
                         </td>
                     </tr>
                     <tr v-if="!carregando && funcionarios.length === 0">
-                        <td colspan="6" class="vazio">Nenhum funcionário encontrado.</td>
+                        <td colspan="7" class="vazio">Nenhum funcionário encontrado.</td>
                     </tr>
                 </tbody>
             </table>
@@ -109,11 +123,10 @@ onMounted(carregar);
     </main>
 </template>
 
-
 <style scoped>
 .conteudo {
     padding: 24px 20px;
-    max-width: 1000px;
+    max-width: 1100px;
     margin: 0 auto;
 }
 
@@ -121,10 +134,11 @@ onMounted(carregar);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 16px;
 }
 
 h2 {
-    margin: 0 0 16px;
+    margin: 0;
 }
 
 .filtros {
@@ -153,6 +167,28 @@ input {
     margin: 0 0 12px;
 }
 
+.sucesso {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    background: #dcfce7;
+    color: #166534;
+    border-radius: 8px;
+    font-size: .92rem;
+}
+
+.fechar {
+    background: none;
+    border: 0;
+    color: #166534;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
 .tabela-area {
     background: #fff;
     border-radius: 10px;
@@ -176,6 +212,7 @@ th {
     background: #f1f5f9;
     color: #475569;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 tr+tr td {
@@ -204,6 +241,7 @@ tr+tr td {
     white-space: nowrap;
 }
 
+a.link,
 button.link {
     background: none;
     border: 0;
@@ -211,29 +249,14 @@ button.link {
     cursor: pointer;
     font-size: .9rem;
     padding: 4px 6px;
+    text-decoration: none;
 }
 
+a.link:hover,
 button.link:hover {
     text-decoration: underline;
 }
 
-.vazio {
-    text-align: center;
-    color: #6b7280;
-    padding: 24px;
-}
-
-a.link {
-    color: #2563a8;
-    font-size: .9rem;
-    padding: 4px 6px;
-    text-decoration: none;
-}
-
-a.link:hover {
-    text-decoration: underline;
-}
-
 .botao {
     background: #2563a8;
     color: #fff;
@@ -248,26 +271,5 @@ a.link:hover {
     text-align: center;
     color: #6b7280;
     padding: 24px;
-}
-
-a.link {
-    color: #2563a8;
-    font-size: .9rem;
-    padding: 4px 6px;
-    text-decoration: none;
-}
-
-a.link:hover {
-    text-decoration: underline;
-}
-
-.botao {
-    background: #2563a8;
-    color: #fff;
-    text-decoration: none;
-    padding: 9px 16px;
-    border-radius: 8px;
-    font-size: .92rem;
-    font-weight: 600;
 }
 </style>

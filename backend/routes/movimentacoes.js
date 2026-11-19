@@ -60,7 +60,6 @@ function lerQuantidade(valor) {
     return Number.isInteger(q) && q > 0 ? q : null;
 }
 
-// ENTRADA: soma ao estoque
 router.post('/entrada', gerenciar, async (req, res) => {
     const idProduto = Number(req.body?.id_produto);
     const quantidade = lerQuantidade(req.body?.quantidade);
@@ -93,7 +92,6 @@ router.post('/entrada', gerenciar, async (req, res) => {
     });
 });
 
-// SAÍDA: subtrai do estoque e registra quem retirou
 router.post('/saida', gerenciar, async (req, res) => {
     const idProduto = Number(req.body?.id_produto);
     const idRetirada = Number(req.body?.id_func_retirada);
@@ -121,7 +119,6 @@ router.post('/saida', gerenciar, async (req, res) => {
         if (!func.rows[0]) throw new ErroNegocio(404, 'Funcionário não encontrado.');
         if (!func.rows[0].ativo) throw new ErroNegocio(409, 'Funcionário inativo.');
 
-        // setor_na_data guarda o setor de quem retirou no momento da saída
         const mov = await c.query(
             `INSERT INTO movimentacao
          (id_produto, id_responsavel, id_func_solicitante, id_func_retirada,
@@ -145,7 +142,6 @@ router.post('/saida', gerenciar, async (req, res) => {
     });
 });
 
-// HISTÓRICO: filtros produto, funcionario (retirada), operacao, status, de, ate
 router.get('/', consultar, async (req, res) => {
     const { produto, funcionario, operacao, de, ate } = req.query;
     const status = (req.query.status || 'CONCLUIDA').toUpperCase();

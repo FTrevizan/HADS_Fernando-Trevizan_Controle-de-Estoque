@@ -27,7 +27,6 @@ router.get('/', async (req, res) => {
              WHERE status = 'CONCLUIDA'
                AND data_conclusao >= date_trunc('month', CURRENT_DATE))::int AS movimentacoes_mes`
             ),
-            // os 8 produtos mais abaixo do mínimo
             pool.query(
                 `SELECT id_produto, codigo, nome, tamanho, unidade_medida, estoque_atual, estoque_min
            FROM produto
@@ -35,7 +34,6 @@ router.get('/', async (req, res) => {
           ORDER BY (estoque_min - estoque_atual) DESC, nome
           LIMIT 8`
             ),
-            // EPIs vencidos ou que vencem em até 30 dias
             pool.query(
                 `SELECT id_produto, codigo, nome, tamanho, validade, estoque_atual,
                 (validade - CURRENT_DATE) AS dias_restantes
@@ -45,7 +43,6 @@ router.get('/', async (req, res) => {
           ORDER BY validade
           LIMIT 8`
             ),
-            // últimas movimentações concluídas
             pool.query(
                 `SELECT m.id_movimentacao, m.operacao, m.quantidade, m.data_conclusao AS data,
                 p.codigo, p.nome AS produto, p.tamanho,

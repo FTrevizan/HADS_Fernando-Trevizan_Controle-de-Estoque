@@ -16,8 +16,7 @@ export function autenticar(req, res, next) {
   }
 }
 
-// Restringe a rota a certos perfis.
-// Uso: exigirPerfil('ADMINISTRADOR', 'ALMOXARIFADO')
+
 export const exigirPerfil = (...perfis) => (req, res, next) => {
   if (!perfis.includes(req.usuario?.perfil)) {
     return res.status(403).json({ erro: 'Sem permissão para esta ação.' });

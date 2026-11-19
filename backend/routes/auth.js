@@ -23,7 +23,6 @@ router.post('/login', async (req, res) => {
     );
     const func = rows[0];
 
-    // mensagem para "não existe" e "senha errada"
     const senhaOk = func && func.senha_hash &&
       (await bcrypt.compare(senha, func.senha_hash));
 
@@ -52,7 +51,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// GET /api/auth/me  -> dados de quem está logado (rota protegida)
 router.get('/me', autenticar, (req, res) => {
   const { id, nome, setor, perfil } = req.usuario;
   res.json({ id, nome, setor, perfil });

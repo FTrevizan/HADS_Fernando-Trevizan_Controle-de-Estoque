@@ -7,7 +7,6 @@ const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
 const podeGerenciar = ['ADMINISTRADOR', 'ALMOXARIFADO'].includes(usuario.perfil);
 const podeRelatorio = ['ADMINISTRADOR', 'ALMOXARIFADO', 'COMPRAS'].includes(usuario.perfil);
 
-// volta para a tela anterior; se não houver, vai para o início
 function voltar() {
     if (window.history.state?.back) router.back();
     else router.push({ name: 'home' });

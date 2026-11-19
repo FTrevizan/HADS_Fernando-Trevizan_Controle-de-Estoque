@@ -8,7 +8,7 @@ const sorteio = (lista) => lista[Math.floor(Math.random() * lista.length)];
 const inteiro = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
 const dia = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
 
-// ---------- dados ----------
+
 const setores = {
     'Produção': ['Carlos Silva', 'Mariana Souza', 'João Pereira', 'Fernanda Lima', 'Ricardo Alves', 'Patrícia Gomes'],
     'Manutenção': ['Roberto Santos', 'Anderson Costa', 'Paulo Ribeiro', 'Luciana Martins', 'Marcos Oliveira'],
@@ -26,8 +26,7 @@ const grupos = {
     'Escritório': 'Papelaria e suprimentos',
 };
 
-// [codigo, nome, grupo, tipo, unidade, mínimo, entrada inicial, extras]
-// extras: tam (tamanho), val (validade em dias a partir de hoje), baixo, parado
+
 const P = (codigo, nome, grupo, tipo, un, min, ent, extra = {}) => ({ codigo, nome, grupo, tipo, un, min, ent, ...extra });
 const produtos = [
     P('1001', 'Luva de proteção', 'EPI', 'EPI', 'par', 10, 40, { tam: 'P', val: 400 }),
@@ -85,8 +84,7 @@ const matriculasTeste = [
 ];
 const codigosTeste = produtos.map((p) => p.codigo);
 
-// ---------- limpar os dados de teste ----------
-// Também remove os dados da versão antiga do script (matrículas T... e códigos T-...)
+
 if (modo === 'limpar') {
     const func = `(SELECT id_funcionario FROM funcionario WHERE matricula = ANY($1) OR matricula LIKE 'T%')`;
     const prod = `(SELECT id_produto FROM produto WHERE codigo = ANY($2) OR codigo LIKE 'T-%')`;
@@ -110,7 +108,6 @@ if (modo === 'limpar') {
     process.exit(0);
 }
 
-// ---------- confere se já existem dados de teste ----------
 const { rows: ocupados } = await pool.query(
     `SELECT
      (SELECT COUNT(*) FROM produto WHERE codigo = ANY($1) OR codigo LIKE 'T-%')::int AS produtos,
@@ -129,7 +126,6 @@ const client = await pool.connect();
 try {
     await client.query('BEGIN');
 
-    // ---------- funcionários ----------
     for (let i = 0; i < nomesFuncionarios.length; i += 1) {
         const { nome, setor } = nomesFuncionarios[i];
         await client.query(
@@ -154,7 +150,6 @@ try {
         `SELECT id_funcionario FROM funcionario WHERE matricula = '9001'`
     )).rows[0].id_funcionario;
 
-    // ---------- grupos ----------
     for (const [nome, descricao] of Object.entries(grupos)) {
         await client.query(
             `INSERT INTO grupo_produto (nome, descricao) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
@@ -166,7 +161,6 @@ try {
         mapaGrupos[g.nome] = g.id_grupo;
     }
 
-    // ---------- produtos ----------
     for (const p of produtos) {
         const r = await client.query(
             `INSERT INTO produto (id_grupo, codigo, nome, tipo, unidade_medida, estoque_atual, estoque_min, tamanho, validade)
@@ -179,7 +173,6 @@ try {
         p.vencido = p.val !== undefined && p.val < 0;
     }
 
-    // ---------- movimentações ----------
     const entrada = (p, qtd, dias) =>
         client.query(
             `INSERT INTO movimentacao (id_produto, id_responsavel, quantidade, operacao, status, data_hora, data_conclusao)
@@ -209,7 +202,6 @@ try {
         p.estoque = p.ent;
     }
 
-    // saídas aleatórias; os primeiros itens da lista saem mais
     const movimentaveis = comMovimento.filter((p) => !p.vencido);
     for (let i = 0; i < 170; i += 1) {
         const p = movimentaveis[Math.floor(Math.random() ** 1.8 * movimentaveis.length)];
@@ -218,7 +210,6 @@ try {
         await saida(p, inteiro(1, Math.min(limite, p.estoque)), inteiro(0, 44));
     }
 
-    // produtos marcados como "baixo" ficam abaixo do estoque mínimo
     for (const p of movimentaveis.filter((x) => x.baixo)) {
         while (p.estoque >= p.min && p.estoque > 0) {
             const q = Math.min(Math.max(p.estoque - Math.max(p.min - 2, 0), 1), 6);
@@ -226,7 +217,6 @@ try {
         }
     }
 
-    // pedidos aguardando atendimento e alguns cancelados
     const disponiveis = movimentaveis.filter((p) => p.estoque >= 2);
     const pedido = (status, horas) => {
         const p = sorteio(disponiveis);

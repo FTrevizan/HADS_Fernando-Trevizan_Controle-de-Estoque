@@ -23,14 +23,12 @@ const produtoSelecionado = computed(() => {
     );
 });
 
-// funcionários agrupados por setor, para a lista de seleção
 const funcionariosPorSetor = computed(() => {
     const mapa = {};
     for (const f of funcionarios.value) (mapa[f.setor || 'Sem setor'] ||= []).push(f);
     return Object.entries(mapa);
 });
 
-// volta para a tela anterior; se não houver, vai para o login
 function voltar() {
     if (window.history.state?.back) router.back();
     else router.push({ name: 'login' });

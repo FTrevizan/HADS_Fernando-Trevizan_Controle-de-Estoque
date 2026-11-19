@@ -10,7 +10,6 @@ class ErroNegocio extends Error {
         this.status = status;
     }
 }
-// Funcionários ativos, agrupados por setor na página pública
 router.get('/publico/funcionarios', async (req, res) => {
   try {
     const { rows } = await pool.query(
